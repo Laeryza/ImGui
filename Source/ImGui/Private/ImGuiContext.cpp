@@ -389,14 +389,13 @@ void FImGuiContext::Initialize()
 
 	if (FSlateApplication::IsInitialized())
 	{
-	// Trinity_Lab: ViewportsEnable を無効化 (Multi-Viewport モード OFF)
+	// Multi-Viewport モード OFF (UE Editor との競合回避)
 	// 理由:
 	//   - ON だと SetNextWindowPos の座標系がスクリーン絶対座標になる
 	//   - 結果、PIE ウィンドウを移動・リサイズしても Panel が追従しない
 	//   - OFF にすると PIE ビューポート相対座標になり、追従問題が解消する
 	//   - マウス座標変換は SImGuiOverlay 側の ViewportsEnable 分岐で対応済み
 	//   - Docking は独立フラグなので影響なし
-	// 詳細: Trinity_Lab/Docs/management/imgui_pie_followup_investigation.md
 
 		if (const TSharedPtr<GenericApplication> PlatformApplication = FSlateApplication::Get().GetPlatformApplication())
 		{

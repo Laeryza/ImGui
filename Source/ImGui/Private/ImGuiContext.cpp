@@ -10,6 +10,8 @@
 #include <HAL/UnrealMemory.h>
 #include <Misc/App.h>
 #include <Misc/EngineVersionComparison.h>
+#include <Misc/FileHelper.h>
+#include <Misc/Paths.h>
 #include <Widgets/SWindow.h>
 
 #if WITH_ENGINE
@@ -381,10 +383,23 @@ void FImGuiContext::Initialize()
 	PlatformIO.Platform_SetClipboardTextFn = ImGui_SetClipboardText;
 	PlatformIO.Platform_OpenInShellFn = ImGui_OpenInShell;
 
-	const FString FontPath = FPaths::EngineContentDir() / TEXT("Slate/Fonts/Roboto-Regular.ttf");
-	if (FPaths::FileExists(*FontPath))
+	// NotoSansJP-VF.ttf を Trinity プロジェクトの Resources/Fonts/ から単独デフォルトフォントとして登録
+	// 旧 Roboto-Regular.ttf 読込は削除 (日本語/英字を同一フォントで描画してフォント混在を解消、DL-146)
+	// Lifetime: static TArray でデータを保持、Atlas はコピーしない (FontDataOwnedByAtlas = false)
 	{
-		IO.Fonts->AddFontFromFileTTF(TCHAR_TO_UTF8(*FontPath), 16);
+		static TArray<uint8> NotoSansJPFontData;
+		if (NotoSansJPFontData.Num() == 0)
+		{
+			const FString FontPath = FPaths::ProjectDir() / TEXT("Resources/Fonts/NotoSansJP-VF.ttf");
+			FFileHelper::LoadFileToArray(NotoSansJPFontData, *FontPath);
+		}
+		if (NotoSansJPFontData.Num() > 0)
+		{
+			ImFontConfig FontConfig = {};
+			FontConfig.FontDataOwnedByAtlas = false;
+			FontConfig.MergeMode = false;
+			IO.Fonts->AddFontFromMemoryTTF(NotoSansJPFontData.GetData(), NotoSansJPFontData.Num(), 16.0f, &FontConfig);
+		}
 	}
 
 	if (FSlateApplication::IsInitialized())

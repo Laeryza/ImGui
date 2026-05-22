@@ -383,14 +383,15 @@ void FImGuiContext::Initialize()
 	PlatformIO.Platform_SetClipboardTextFn = ImGui_SetClipboardText;
 	PlatformIO.Platform_OpenInShellFn = ImGui_OpenInShell;
 
-	// NotoSansJP-VF.ttf を Trinity プロジェクトの Resources/Fonts/ から単独デフォルトフォントとして登録
+	// NotoSansJP-Medium.ttf を Trinity プロジェクトの Resources/Fonts/ から単独デフォルトフォントとして登録
 	// 旧 Roboto-Regular.ttf 読込は削除 (日本語/英字を同一フォントで描画してフォント混在を解消、DL-146)
+	// VF (Variable Font) ではなく固定ウェイト Medium を採用 (VF 軸制御不能で Regular 描画になり細すぎる問題、DL-150)
 	// Lifetime: static TArray でデータを保持、Atlas はコピーしない (FontDataOwnedByAtlas = false)
 	{
 		static TArray<uint8> NotoSansJPFontData;
 		if (NotoSansJPFontData.Num() == 0)
 		{
-			const FString FontPath = FPaths::ProjectDir() / TEXT("Resources/Fonts/NotoSansJP-VF.ttf");
+			const FString FontPath = FPaths::ProjectDir() / TEXT("Resources/Fonts/NotoSansJP-Medium.ttf");
 			FFileHelper::LoadFileToArray(NotoSansJPFontData, *FontPath);
 		}
 		if (NotoSansJPFontData.Num() > 0)

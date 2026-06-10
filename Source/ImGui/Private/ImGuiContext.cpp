@@ -393,6 +393,10 @@ void FImGuiContext::Initialize()
 		{
 			const FString FontPath = FPaths::ProjectDir() / TEXT("Resources/Fonts/NotoSansJP-Medium.ttf");
 			FFileHelper::LoadFileToArray(NotoSansJPFontData, *FontPath);
+			if (NotoSansJPFontData.Num() == 0)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("FImGuiContext::Initialize: font load failed: %s (pkg staging missing?)"), *FontPath);
+			}
 		}
 		if (NotoSansJPFontData.Num() > 0)
 		{

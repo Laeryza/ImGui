@@ -407,6 +407,31 @@ void FImGuiContext::Initialize()
 		}
 	}
 
+	// Kenney Input Prompts (KBM) のキーグリフを直前の NotoSansJP に MergeMode で合流させる (I5/DL-225)。
+	// PUA U+E000–U+E100 のみ対象。MergeMode は直前フォントに合流するので NotoSansJP の直後・他 AddFont の前に置く。
+	// Lifetime は NotoSansJP と同様 static 保持 + FontDataOwnedByAtlas=false。
+	{
+		static TArray<uint8> KenneyFontData;
+		if (KenneyFontData.Num() == 0)
+		{
+			const FString KenneyPath = FPaths::ProjectDir() / TEXT("Resources/Fonts/KenneyInputKBM.ttf");
+			FFileHelper::LoadFileToArray(KenneyFontData, *KenneyPath);
+			if (KenneyFontData.Num() == 0)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("FImGuiContext::Initialize: Kenney font load failed: %s (pkg staging missing?)"), *KenneyPath);
+			}
+		}
+		if (KenneyFontData.Num() > 0)
+		{
+			static const ImWchar KenneyRanges[] = { 0xE000, 0xE100, 0 };
+			ImFontConfig Cfg = {};
+			Cfg.FontDataOwnedByAtlas = false;
+			Cfg.MergeMode = true;          // 直前の NotoSansJP にマージ
+			Cfg.GlyphRanges = KenneyRanges; // PUA U+E000–U+E100
+			IO.Fonts->AddFontFromMemoryTTF(KenneyFontData.GetData(), KenneyFontData.Num(), 16.0f, &Cfg);
+		}
+	}
+
 	if (FSlateApplication::IsInitialized())
 	{
 	// Multi-Viewport モード OFF (UE Editor との競合回避)

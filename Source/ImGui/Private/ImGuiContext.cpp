@@ -333,6 +333,10 @@ void FImGuiContext::Initialize()
 
 	IO.ConfigNavMoveSetMousePos = true;
 	IO.ConfigDpiScaleViewports = true;
+	// 高 DPI でフォントを再ラスタライズしてくっきり描く (DL-240 追補)。Viewports だけ DPI スケール
+	// すると 16px 焼きのグリフが bitmap 拡大されて (特に Kenney キーグリフが) ぼやけるため、
+	// フォント側も DPI 連動で焼き直す。1.92 の dynamic font で実サイズ rasterize される。
+	IO.ConfigDpiScaleFonts = true;
 	IO.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 	IO.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
 	IO.ConfigFlags |= ImGuiConfigFlags_DockingEnable;

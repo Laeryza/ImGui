@@ -5,6 +5,7 @@
 #include <Framework/Application/SlateApplication.h>
 
 #include "ImGuiContext.h"
+#include "ImGuiInputPassthrough.h"
 
 FImGuiDrawList::FImGuiDrawList(ImDrawList* Source)
 {
@@ -26,6 +27,24 @@ FImGuiDrawData::FImGuiDrawData(const ImDrawData* Source)
 	DisplayPos = Source->DisplayPos;
 	DisplaySize = Source->DisplaySize;
 	FrameBufferScale = Source->FramebufferScale;
+}
+
+namespace ImGuiInputPassthrough
+{
+	// FImGuiInputProcessor が参照する設定 (本 TU 内 file-local)。
+	// 外部からは公開 API (ImGuiInputPassthrough.h) 経由で設定する。
+	static bool bEnabled = false;
+	static TFunction<bool(const FKey&)> MovementKeyPredicate;
+
+	void SetEnabled(bool bInEnabled)
+	{
+		bEnabled = bInEnabled;
+	}
+
+	void SetMovementKeyPredicate(TFunction<bool(const FKey&)> Predicate)
+	{
+		MovementKeyPredicate = MoveTemp(Predicate);
+	}
 }
 
 class FImGuiInputProcessor : public IInputProcessor
@@ -121,6 +140,15 @@ public:
 		IO.AddKeyEvent(ImGuiMod_Alt, ModifierKeys.IsAltDown());
 		IO.AddKeyEvent(ImGuiMod_Super, ModifierKeys.IsCommandDown());
 
+		// 移動キー passthrough: 述語が「素通し対象」と判定したキーは、テキスト編集中 (WantTextInput) を
+		// 除いてゲーム側へ素通しする (UI 表示中も移動継続)。述語は DOWN 素通し対象 = UI 中に動けるキーの
+		// 決定のみを担う。集合が多少不完全でも「そのキーで UI 中に動けない」程度で幽霊にはならない。
+		if (ImGuiInputPassthrough::bEnabled
+			&& ImGuiInputPassthrough::MovementKeyPredicate
+			&& ImGuiInputPassthrough::MovementKeyPredicate(Event.GetKey()))
+		{
+			return IO.WantTextInput;
+		}
 		return IO.WantCaptureKeyboard;
 	}
 
@@ -143,6 +171,12 @@ public:
 		IO.AddKeyEvent(ImGuiMod_Alt, ModifierKeys.IsAltDown());
 		IO.AddKeyEvent(ImGuiMod_Super, ModifierKeys.IsCommandDown());
 
+		// passthrough 有効時は全キーの離下を常にゲーム側へ素通しする。
+		// hold 型キーの「離下が ImGui に吸われて届かない = 幽霊」を構造的に排除する要 (flush 不要化の核心)。
+		if (ImGuiInputPassthrough::bEnabled)
+		{
+			return false;
+		}
 		return IO.WantCaptureKeyboard;
 	}
 

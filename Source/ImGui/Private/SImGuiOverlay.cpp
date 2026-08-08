@@ -29,6 +29,10 @@ FImGuiDrawData::FImGuiDrawData(const ImDrawData* Source)
 	FrameBufferScale = Source->FramebufferScale;
 }
 
+// 入力 passthrough の経路決定ログ用カテゴリ。既定 verbosity では無音で、
+// 症状発生時にコンソールで `Log LogImGuiInput Verbose` を打つとフレーム単位の裁定履歴が取れる。
+DEFINE_LOG_CATEGORY_STATIC(LogImGuiInput, Log, All);
+
 namespace ImGuiInputPassthrough
 {
 	// FImGuiInputProcessor が参照する設定 (本 TU 内 file-local)。
@@ -153,13 +157,24 @@ public:
 		// 移動キー passthrough: 述語が「素通し対象」と判定したキーは、テキスト編集中 (WantTextInput) を
 		// 除いてゲーム側へ素通しする (UI 表示中も移動継続)。述語は DOWN 素通し対象 = UI 中に動けるキーの
 		// 決定のみを担う。集合が多少不完全でも「そのキーで UI 中に動けない」程度で幽霊にはならない。
-		if (ImGuiInputPassthrough::bEnabled
-			&& ImGuiInputPassthrough::MovementKeyPredicate
-			&& ImGuiInputPassthrough::MovementKeyPredicate(Event.GetKey()))
-		{
-			return IO.WantTextInput;
-		}
-		return IO.WantCaptureKeyboard;
+		const bool bPassthroughEnabled = ImGuiInputPassthrough::bEnabled;
+		const bool bHasPredicate = static_cast<bool>(ImGuiInputPassthrough::MovementKeyPredicate);
+		const bool bPredicateHit = bPassthroughEnabled && bHasPredicate
+			&& ImGuiInputPassthrough::MovementKeyPredicate(Event.GetKey());
+
+		// 裁定: true を返すと ImGui が消費 (ゲームに届かない)、false ならゲーム側へ素通し。
+		const bool bConsumedByImGui = bPredicateHit ? IO.WantTextInput : IO.WantCaptureKeyboard;
+
+		// 経路決定ログ (verbose 限定・既定では無音)。WASD 間欠死の再発時に、どの分岐で
+		// 消費されたかをフレーム単位で辿るための常設計装。
+		UE_LOG(LogImGuiInput, Verbose,
+			TEXT("KeyDown '%s': enabled=%d predicate=%d hit=%d WantTextInput=%d WantCaptureKeyboard=%d -> %s"),
+			*Event.GetKey().ToString(),
+			bPassthroughEnabled ? 1 : 0, bHasPredicate ? 1 : 0, bPredicateHit ? 1 : 0,
+			IO.WantTextInput ? 1 : 0, IO.WantCaptureKeyboard ? 1 : 0,
+			bConsumedByImGui ? TEXT("ImGui が消費") : TEXT("ゲームへ素通し"));
+
+		return bConsumedByImGui;
 	}
 
 	virtual bool HandleKeyUpEvent(FSlateApplication& SlateApp, const FKeyEvent& Event) override

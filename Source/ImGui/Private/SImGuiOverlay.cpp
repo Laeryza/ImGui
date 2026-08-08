@@ -45,6 +45,16 @@ namespace ImGuiInputPassthrough
 	{
 		MovementKeyPredicate = MoveTemp(Predicate);
 	}
+
+	bool IsEnabled()
+	{
+		return bEnabled;
+	}
+
+	bool HasMovementKeyPredicate()
+	{
+		return static_cast<bool>(MovementKeyPredicate);
+	}
 }
 
 class FImGuiInputProcessor : public IInputProcessor

@@ -26,6 +26,15 @@ namespace ImGuiInputPassthrough
 	 * 未設定なら KeyDown は素通ししない (KeyUp の素通しは SetEnabled の状態のみで決まる)。
 	 */
 	IMGUI_API void SetMovementKeyPredicate(TFunction<bool(const FKey&)> Predicate);
+
+	// 計装 (observability) 用の getter。いずれも純粋な状態読み取りで副作用を持たない。
+	// 「passthrough が仕込まれているつもりで実は無効だった」を外から機械判定できるようにするためのもの。
+
+	/** passthrough が有効か (SetEnabled の現在値)。 */
+	IMGUI_API bool IsEnabled();
+
+	/** MovementKeyPredicate が設定済みか (bound かどうか。中身は問わない)。 */
+	IMGUI_API bool HasMovementKeyPredicate();
 }
 
 #endif // #ifndef IMGUI_DISABLE

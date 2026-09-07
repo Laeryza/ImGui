@@ -441,23 +441,19 @@ int32 SImGuiOverlay::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGe
 		{
 #if WITH_ENGINE
 			UTexture* Texture = DrawCmd.GetTexID();
+			// GC 済みテクスチャの生ポインタを SetResourceObject に渡すと AV (null+0x38)。map 遷移 GC 後の
+			// 古い DrawData への保険として、無効な TexID の DrawCmd は描画ごと skip する (以降は有効前提)。
+			if (!IsValid(Texture))
+			{
+				continue;
+			}
 			if (TextureBrush.GetResourceObject() != Texture)
 			{
 				TextureBrush.SetResourceObject(Texture);
-				if (IsValid(Texture))
-				{
-					TextureBrush.ImageSize.X = Texture->GetSurfaceWidth();
-					TextureBrush.ImageSize.Y = Texture->GetSurfaceHeight();
-					TextureBrush.ImageType = ESlateBrushImageType::FullColor;
-					TextureBrush.DrawAs = ESlateBrushDrawType::Image;
-				}
-				else
-				{
-					TextureBrush.ImageSize.X = 0;
-					TextureBrush.ImageSize.Y = 0;
-					TextureBrush.ImageType = ESlateBrushImageType::NoImage;
-					TextureBrush.DrawAs = ESlateBrushDrawType::NoDrawType;
-				}
+				TextureBrush.ImageSize.X = Texture->GetSurfaceWidth();
+				TextureBrush.ImageSize.Y = Texture->GetSurfaceHeight();
+				TextureBrush.ImageType = ESlateBrushImageType::FullColor;
+				TextureBrush.DrawAs = ESlateBrushDrawType::Image;
 			}
 #else
 			FSlateBrush* Texture = DrawCmd.GetTexID();

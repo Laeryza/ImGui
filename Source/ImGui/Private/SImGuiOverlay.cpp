@@ -24,6 +24,30 @@ FImGuiDrawData::FImGuiDrawData(const ImDrawData* Source)
 
 	ImGui::CopyArray(Source->CmdLists, DrawLists);
 
+#if WITH_ENGINE
+	// 描画までの間に GC が走っても TexID が dangling にならないよう、この DrawData が使う
+	// テクスチャを列挙して強参照で確保する。draw cmd は 1 フレーム数十本で、実テクスチャは
+	// フォントアトラス中心の数枚に収まるため線形探索で足りる。
+	for (const FImGuiDrawList& DrawList : DrawLists)
+	{
+		for (const ImDrawCmd& DrawCmd : DrawList.CmdBuffer)
+		{
+			UTexture* Texture = DrawCmd.GetTexID();
+			if (Texture == nullptr)
+			{
+				continue;
+			}
+
+			const bool bAlreadyHeld = ReferencedTextures.ContainsByPredicate(
+				[Texture](const TStrongObjectPtr<UTexture>& Held) { return Held.Get() == Texture; });
+			if (!bAlreadyHeld)
+			{
+				ReferencedTextures.Emplace(Texture);
+			}
+		}
+	}
+#endif
+
 	DisplayPos = Source->DisplayPos;
 	DisplaySize = Source->DisplaySize;
 	FrameBufferScale = Source->FramebufferScale;

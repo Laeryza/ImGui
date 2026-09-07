@@ -4,6 +4,9 @@
 
 #include <Framework/Application/IInputProcessor.h>
 #include <Widgets/SLeafWidget.h>
+#if WITH_ENGINE
+#include <UObject/StrongObjectPtr.h>
+#endif
 
 THIRD_PARTY_INCLUDES_START
 #include <imgui.h>
@@ -31,6 +34,13 @@ struct FImGuiDrawData
 	int32 TotalVtxCount = 0;
 
 	TArray<FImGuiDrawList> DrawLists;
+
+#if WITH_ENGINE
+	// CmdBuffer の TexID は生の UTexture*。GC は DrawData の存在を知らないので、参照先は
+	// DrawData 自身が強参照で押さえる。これが無いと map 遷移の GC 後に OnPaint が
+	// 解放済みポインタを踏む (IsValid() は null でない dangling を弾けないため防げない)。
+	TArray<TStrongObjectPtr<UTexture>> ReferencedTextures;
+#endif
 
 	FVector2f DisplayPos = FVector2f::ZeroVector;
 	FVector2f DisplaySize = FVector2f::ZeroVector;

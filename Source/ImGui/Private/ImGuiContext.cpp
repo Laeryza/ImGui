@@ -729,6 +729,36 @@ void FImGuiContext::DestroyTexture(ImTextureData* TextureData)
 
 	TextureData->SetTexID(ImTextureID_Invalid);
 	TextureData->SetStatus(ImTextureStatus_Destroyed);
+
+	// strong ref を落とした今、overlay が抱える DrawData の生 TexID (= この UTexture*) が GC で dangling に
+	// なる前に描画対象から外す。SetDrawData の入口が ImGui_RenderWindow の 1 箇所なので出口もここで閉じる。
+	ClearOverlaysDrawData();
+}
+
+void FImGuiContext::ClearOverlaysDrawData()
+{
+	if (!Context)
+	{
+		return;
+	}
+
+	for (ImGuiViewport* Viewport : Context->PlatformIO.Viewports)
+	{
+		if (!Viewport)
+		{
+			continue;
+		}
+
+		// GetOrCreate は使わない (破棄済み viewport に PlatformUserData を確保し直さないため)。
+		const FImGuiViewportData* ViewportData = static_cast<FImGuiViewportData*>(Viewport->PlatformUserData);
+		if (ViewportData)
+		{
+			if (const TSharedPtr<SImGuiOverlay> Overlay = ViewportData->Overlay.Pin())
+			{
+				Overlay->ClearDrawData();
+			}
+		}
+	}
 }
 
 void FImGuiContext::BeginFrame()

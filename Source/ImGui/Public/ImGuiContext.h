@@ -44,6 +44,10 @@ public:
 	/// Ends the current frame
 	void EndFrame();
 
+	/// Drops cached draw data on every viewport overlay of this context. Called from DestroyTexture so
+	/// that a map-transition GC of a UTexture can't leave an overlay drawing a dangling raw TexID.
+	void ClearOverlaysDrawData();
+
 #if WITH_NETIMGUI
 	/// Listens for remote connections
 	bool Listen(uint16 Port);

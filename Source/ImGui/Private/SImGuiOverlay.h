@@ -59,6 +59,10 @@ public:
 	TSharedPtr<FImGuiContext> GetContext() const;
 	void SetDrawData(const ImDrawData* InDrawData);
 
+	// テクスチャ破棄時に呼ぶ。保持中の DrawData は GC 済み UTexture の生ポインタを掴んだままなので捨てる。
+	void ClearDrawData();
+	bool HasValidDrawData() const;
+
 private:
 	TSharedPtr<FImGuiContext> Context = nullptr;
 	TSharedPtr<IInputProcessor> InputProcessor = nullptr;

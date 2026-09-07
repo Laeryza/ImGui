@@ -520,4 +520,14 @@ void SImGuiOverlay::SetDrawData(const ImDrawData* InDrawData)
 	DrawData = FImGuiDrawData(InDrawData);
 }
 
+void SImGuiOverlay::ClearDrawData()
+{
+	DrawData = FImGuiDrawData();
+}
+
+bool SImGuiOverlay::HasValidDrawData() const
+{
+	return DrawData.bValid;
+}
+
 #endif // #ifndef IMGUI_DISABLE
